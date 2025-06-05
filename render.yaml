@@ -1,0 +1,7 @@
+
+services:
+  - type: web
+    name: gesture-control-app
+    runtime: python
+    buildCommand: ""
+    startCommand: "python app.py"
