@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import base64
+import os
 
 app = Flask(__name__)
 mp_hands = mp.solutions.hands
@@ -29,4 +30,5 @@ def process_frame():
     return base64.b64encode(jpeg).decode('utf-8')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
