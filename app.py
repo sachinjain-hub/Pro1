@@ -1,34 +1,22 @@
-from flask import Flask, render_template, request
-import cv2
-import numpy as np
-import mediapipe as mp
-import base64
+from flask import Flask, request, jsonify
 import os
+import pickle
+import numpy as np
 
 app = Flask(__name__)
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands()
-drawing_utils = mp.solutions.drawing_utils
+model = pickle.load(open('model.pkl', 'rb'))
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/process_frame', methods=['POST'])
-def process_frame():
-    data = request.files['frame'].read()
-    nparr = np.frombuffer(data, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    result = hands.process(img_rgb)
-
-    if result.multi_hand_landmarks:
-        for hand_landmarks in result.multi_hand_landmarks:
-            drawing_utils.draw_landmarks(img, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-    _, jpeg = cv2.imencode('.jpg', img)
-    return base64.b64encode(jpeg).decode('utf-8')
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json(force=True)
+    features = [data['area'], data['bedrooms'], data['bathrooms'], data['stories'],
+                data['mainroad'], data['guestroom'], data['basement'],
+                data['hotwaterheating'], data['airconditioning'],
+                data['parking'], data['prefarea'], data['furnishingstatus']]
+    
+    prediction = model.predict([np.array(features)])
+    return jsonify({'predicted_price': int(prediction[0])})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    port = int(os.environ.get('PORT', 5000))  # This is required for Render
+    app.run(host='0.0.0.0', port=port)
